@@ -179,24 +179,44 @@ async function getIGDBToken(env) {
 async function searchIGDB(query, env) {
   const token = await getIGDBToken(env);
   const clientId = await env.KV.get('config:igdb_client_id');
-  const safe = query.replace(/"/g, '');
-  const body = 'fields id,name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating;\nsearch "' + safe + '";\nlimit 10;';
+  const safe = query.replace(/"/g, '').trim();
 
-  const res = await fetch('https://api.igdb.com/v4/games', {
+  const headers = {
+    'Client-ID': clientId,
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'text/plain'
+  };
+
+  const fields = 'fields id,name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating;';
+
+  // Primary: full-text search
+  const res1 = await fetch('https://api.igdb.com/v4/games', {
     method: 'POST',
-    headers: {
-      'Client-ID': clientId,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'text/plain'
-    },
-    body
+    headers,
+    body: fields + '\nsearch "' + safe + '";\nlimit 10;'
   });
+  const raw1 = await res1.json();
+  let games = Array.isArray(raw1) ? raw1 : [];
 
-  const raw = await res.json();
-  if (!Array.isArray(raw)) throw new Error('IGDB returned: ' + JSON.stringify(raw));
-  const games = raw;
+  // Fallback: substring match on last meaningful word (handles partial words + multi-word combos)
+  if (games.length < 4) {
+    const words = safe.split(/\s+/).filter(w => w.length >= 3);
+    const word = words[words.length - 1];
+    if (word) {
+      const res2 = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers,
+        body: fields + '\nwhere name ~* *"' + word + '"*;\nlimit 10;'
+      });
+      const raw2 = await res2.json();
+      if (Array.isArray(raw2)) {
+        const seen = new Set(games.map(g => g.id));
+        raw2.forEach(g => { if (!seen.has(g.id)) games.push(g); });
+      }
+    }
+  }
 
-  return games.map(g => ({
+  return games.slice(0, 10).map(g => ({
     id: g.id,
     name: g.name,
     cover: g.cover ? g.cover.url.replace('t_thumb', 't_cover_big').replace('//', 'https://') : null,
