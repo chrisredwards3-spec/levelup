@@ -178,6 +178,7 @@ function renderLibrary() {
         '</div>' +
       '</div>' +
       scoreHtml +
+      '<button class="game-card-x" onclick="event.stopPropagation();deleteByIndex(' + i + ')">×</button>' +
     '</div>';
   }).join('');
 }
@@ -308,10 +309,7 @@ function renderAddSheet() {
     '<button class="platform-chip' + (addPlatform === p.id ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
   ).join('');
 
-  const inLibrary = isEditing;
-  const deleteBtn = inLibrary
-    ? '<button class="btn-delete" onclick="confirmDelete()">Remove from Library</button>'
-    : '';
+  const deleteBtn = '';
 
   document.getElementById('add-game-content').innerHTML =
     '<div class="add-game-header">' +
@@ -353,17 +351,16 @@ function setPlatform(id) {
   renderAddSheet();
 }
 
-function confirmDelete() {
-  if (!pendingGame) return;
-  const idx = libraryGames.findIndex(g => g === pendingGame || (g.name === pendingGame.name && g.addedAt === pendingGame.addedAt));
-  if (idx === -1) return;
-  libraryGames.splice(idx, 1);
+function deleteByIndex(idx) {
+  const game = filteredLibraryCache[idx];
+  if (!game) return;
+  const libIdx = libraryGames.findIndex(g => g === game || (g.name === game.name && g.addedAt === game.addedAt));
+  if (libIdx !== -1) libraryGames.splice(libIdx, 1);
   fetch('/api/library', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: pendingGame.id, name: pendingGame.name, addedAt: pendingGame.addedAt })
+    body: JSON.stringify({ id: game.id, name: game.name, addedAt: game.addedAt })
   });
-  closeAddGame();
   renderLibrary();
   updateHomeStats();
 }
