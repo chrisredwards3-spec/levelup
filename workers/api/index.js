@@ -247,14 +247,33 @@ async function searchIGDB(query, env) {
     }
   }
 
-  return games.slice(0, 10).map(g => ({
+  const top = games.slice(0, 10);
+
+  // Fetch time-to-beat for all results in one call
+  const ids = top.map(g => g.id).filter(Boolean);
+  const ttbMap = {};
+  if (ids.length) {
+    try {
+      const ttbRes = await fetch('https://api.igdb.com/v4/game_time_to_beats', {
+        method: 'POST',
+        headers,
+        body: 'fields game_id,normally;\nwhere game_id = (' + ids.join(',') + ');\nlimit ' + ids.length + ';'
+      });
+      const ttbData = await ttbRes.json();
+      if (Array.isArray(ttbData)) {
+        ttbData.forEach(t => { if (t.normally) ttbMap[t.game_id] = Math.round(t.normally / 3600); });
+      }
+    } catch (_) {}
+  }
+
+  return top.map(g => ({
     id: g.id,
     name: g.name,
     cover: g.cover ? g.cover.url.replace('t_thumb', 't_cover_big').replace('//', 'https://') : null,
     platforms: g.platforms ? g.platforms.map(p => p.abbreviation).filter(Boolean) : [],
     year: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null,
     metacritic: g.aggregated_rating ? Math.round(g.aggregated_rating) : null,
-    timeToBeat: null
+    timeToBeat: ttbMap[g.id] || null
   }));
 }
 

@@ -285,15 +285,17 @@ function renderWishlist() {
       : '<div class="game-card-cover-placeholder">🎮</div>';
     const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 3).join(', ') : '';
     const year = g.year ? ' · ' + g.year : '';
-    const mc = g.metacritic ? ' · MC ' + g.metacritic : '';
     const wantOnIds = g.wantOn && g.wantOn.length ? g.wantOn : [];
-    const wantOn = wantOnIds.length ? ' · ' + wantOnIds.map(id => { const c = CONSOLE_CATALOG.find(x => x.id === id); return c ? c.short : id; }).join(', ') : '';
+    const wantOn = wantOnIds.length ? wantOnIds.map(id => { const c = CONSOLE_CATALOG.find(x => x.id === id); return c ? c.short : id; }).join(', ') : '';
+    const mcPill = g.metacritic ? '<span class="pill">MC ' + g.metacritic + '</span>' : '';
+    const ttbPill = g.timeToBeat ? '<span class="pill pill-time">⏱ ' + g.timeToBeat + 'h</span>' : '';
+    const wantPills = wantOnIds.map(id => { const c = CONSOLE_CATALOG.find(x => x.id === id); return c ? '<span class="pill" style="border-color:' + c.color + ';color:' + c.color + '">' + c.short + '</span>' : ''; }).join('');
     return '<div class="game-card">' +
       coverHtml +
       '<div class="game-card-body">' +
         '<div class="game-card-title">' + g.name + '</div>' +
-        '<div class="game-card-meta">' + platforms + year + mc + '</div>' +
-        (wantOn ? '<div class="game-card-meta" style="color:var(--accent)">Want on' + wantOn + '</div>' : '') +
+        '<div class="game-card-meta">' + platforms + year + '</div>' +
+        '<div class="game-card-pills">' + mcPill + ttbPill + wantPills + '</div>' +
       '</div>' +
       '<button class="game-card-x" onclick="deleteWishlistItem(' + i + ')">×</button>' +
     '</div>';
