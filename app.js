@@ -26,6 +26,7 @@ let searchResultsCache = [];
 let searchContext = 'library';
 let pendingGame = null;
 let isEditing = false;
+let isWishlistAdd = false;
 let addStatus = 'playing';
 let addPlatform = [];
 let scoreStr = '';
@@ -240,11 +241,14 @@ function renderWishlist() {
     const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 3).join(', ') : '';
     const year = g.year ? ' · ' + g.year : '';
     const mc = g.metacritic ? ' · MC ' + g.metacritic : '';
+    const wantOnIds = g.wantOn && g.wantOn.length ? g.wantOn : [];
+    const wantOn = wantOnIds.length ? ' · ' + wantOnIds.map(id => { const c = CONSOLE_CATALOG.find(x => x.id === id); return c ? c.short : id; }).join(', ') : '';
     return '<div class="game-card">' +
       coverHtml +
       '<div class="game-card-body">' +
         '<div class="game-card-title">' + g.name + '</div>' +
         '<div class="game-card-meta">' + platforms + year + mc + '</div>' +
+        (wantOn ? '<div class="game-card-meta" style="color:var(--accent)">Want on' + wantOn + '</div>' : '') +
       '</div>' +
       '<button class="game-card-x" onclick="deleteWishlistItem(' + i + ')">×</button>' +
     '</div>';
@@ -333,17 +337,64 @@ function renderSearchResults(games) {
 function selectResult(idx) {
   const game = searchResultsCache[idx];
   if (searchContext === 'wishlist') {
+    pendingGame = game;
+    isWishlistAdd = true;
+    addPlatform = [];
     closeGameSearch();
-    addToWishlist(game);
+    renderWishlistAddSheet();
+    document.getElementById('add-sheet').classList.remove('hidden');
+    document.getElementById('add-backdrop').classList.remove('hidden');
     return;
   }
   pendingGame = game;
   isEditing = false;
+  isWishlistAdd = false;
   addStatus = 'playing';
   addPlatform = [];
   scoreStr = '';
   closeGameSearch();
   openAddGame();
+}
+
+function renderWishlistAddSheet() {
+  if (!pendingGame) return;
+  const g = pendingGame;
+  const coverHtml = g.cover
+    ? '<img class="add-game-cover" src="' + g.cover + '" alt="">'
+    : '<div class="add-game-cover-ph">🎮</div>';
+  const igdbPlatforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 3).join(', ') : '';
+  const year = g.year ? ' · ' + g.year : '';
+  const mc = g.metacritic ? ' · MC ' + g.metacritic : '';
+  const platformChips = CONSOLE_CATALOG.map(p =>
+    '<button class="platform-chip' + (addPlatform.includes(p.id) ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
+  ).join('');
+  document.getElementById('add-game-content').innerHTML =
+    '<div class="add-game-header">' +
+      coverHtml +
+      '<div>' +
+        '<div class="add-game-title">' + g.name + '</div>' +
+        '<div class="add-game-meta">' + igdbPlatforms + year + mc + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="add-section-label">Want to play on</div>' +
+    '<div class="platform-chips">' + platformChips + '</div>' +
+    '<button class="btn-primary" onclick="saveWishlistGame()">Add to Wishlist</button>';
+}
+
+async function saveWishlistGame() {
+  if (!pendingGame) return;
+  const game = pendingGame;
+  const wantOn = addPlatform.slice();
+  closeAddGame();
+  if (wishlistGames.find(g => g.id === game.id)) return;
+  wishlistGames.push(Object.assign({}, game, { addedAt: Date.now(), wantOn }));
+  renderWishlist();
+  updateHomeStats();
+  await fetch('/api/wishlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({}, game, { wantOn }))
+  });
 }
 
 async function addToWishlist(game) {
@@ -381,6 +432,7 @@ function closeAddGame() {
   document.getElementById('add-backdrop').classList.add('hidden');
   pendingGame = null;
   isEditing = false;
+  isWishlistAdd = false;
 }
 
 function renderAddSheet() {
@@ -447,7 +499,8 @@ function setPlatform(id) {
   const idx = addPlatform.indexOf(id);
   if (idx === -1) addPlatform.push(id);
   else addPlatform.splice(idx, 1);
-  renderAddSheet();
+  if (isWishlistAdd) renderWishlistAddSheet();
+  else renderAddSheet();
 }
 
 function deleteByIndex(idx) {
