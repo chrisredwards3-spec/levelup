@@ -152,7 +152,7 @@ function renderLibrary() {
   const filtered = libraryGames.filter(g => g.status === currentLibraryFilter);
 
   if (!filtered.length) {
-    const labels = { playing: 'currently playing', completed: 'completed', owned: 'owned but unplayed', dropped: 'dropped' };
+    const labels = { playing: 'currently playing', completed: 'finished', owned: 'owned but unplayed', dropped: 'dropped' };
     list.innerHTML = '<div class="empty-state">No games ' + labels[currentLibraryFilter] + ' yet</div>';
     return;
   }
@@ -472,7 +472,7 @@ function renderAddSheet() {
     '<div class="add-section-label">Status</div>' +
     '<div class="status-pills">' +
       '<button class="' + sc('playing') + '" onclick="setStatus(\'playing\')">Playing</button>' +
-      '<button class="' + sc('completed') + '" onclick="setStatus(\'completed\')">Completed</button>' +
+      '<button class="' + sc('completed') + '" onclick="setStatus(\'completed\')">Finished</button>' +
       '<button class="' + sc('owned') + '" onclick="setStatus(\'owned\')">Owned</button>' +
       '<button class="' + sc('dropped') + '" onclick="setStatus(\'dropped\')">Dropped</button>' +
     '</div>' +
