@@ -19,6 +19,7 @@ let ownedConsoles = [];
 let libraryGames = [];
 let filteredLibraryCache = [];
 let currentLibraryFilter = 'playing';
+let currentConsoleFilter = 'all';
 let wishlistGames = [];
 let filteredWishlistCache = [];
 let currentWishlistFilter = 'all';
@@ -48,6 +49,7 @@ document.querySelectorAll('.filter-tab').forEach(btn => {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentLibraryFilter = btn.dataset.filter;
+    currentConsoleFilter = 'all';
     renderLibrary();
   });
 });
@@ -149,7 +151,21 @@ async function loadLibrary() {
 
 function renderLibrary() {
   const list = document.getElementById('library-list');
-  const filtered = libraryGames.filter(g => g.status === currentLibraryFilter);
+  let byStatus = libraryGames.filter(g => g.status === currentLibraryFilter);
+
+  if (currentLibraryFilter === 'completed') {
+    byStatus = byStatus.slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+  }
+
+  renderConsoleFilterChips(byStatus);
+
+  let filtered = byStatus;
+  if (currentConsoleFilter !== 'all') {
+    filtered = byStatus.filter(g => {
+      const ids = g.playedOn && g.playedOn.length ? g.playedOn : (g.platform ? [g.platform] : []);
+      return ids.includes(currentConsoleFilter);
+    });
+  }
 
   if (!filtered.length) {
     const labels = { playing: 'currently playing', completed: 'finished', owned: 'owned but unplayed', dropped: 'dropped' };
@@ -171,16 +187,22 @@ function renderLibrary() {
     const metaHtml = g.metacritic ? '<span class="pill">MC ' + g.metacritic + '</span>' : '';
     const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 2).join(', ') : '';
     const year = g.year ? ' · ' + g.year : '';
+    const statusLabel = g.status === 'completed' ? 'Finished' : g.status.charAt(0).toUpperCase() + g.status.slice(1);
 
     const playedOnIds = g.playedOn && g.playedOn.length ? g.playedOn : (g.platform ? [g.platform] : []);
-    const playedOn = playedOnIds.length ? ' · ' + playedOnIds.map(id => { const c = CONSOLE_CATALOG.find(x => x.id === id); return c ? c.short : id; }).join(', ') : '';
+    const consolePills = playedOnIds.map(id => {
+      const c = CONSOLE_CATALOG.find(x => x.id === id);
+      return c ? '<span class="pill" style="border-color:' + c.color + ';color:' + c.color + '">' + c.short + '</span>' : '';
+    }).join('');
+
     return '<div class="game-card" onclick="openEditGame(' + i + ')">' +
       coverHtml +
       '<div class="game-card-body">' +
         '<div class="game-card-title">' + g.name + '</div>' +
-        '<div class="game-card-meta">' + platforms + year + playedOn + '</div>' +
+        '<div class="game-card-meta">' + platforms + year + '</div>' +
         '<div class="game-card-pills">' +
-          '<span class="pill pill-' + g.status + '">' + g.status + '</span>' +
+          '<span class="pill pill-' + g.status + '">' + statusLabel + '</span>' +
+          consolePills +
           timeHtml +
           metaHtml +
         '</div>' +
@@ -189,6 +211,29 @@ function renderLibrary() {
       '<button class="game-card-x" onclick="event.stopPropagation();deleteByIndex(' + i + ')">×</button>' +
     '</div>';
   }).join('');
+}
+
+function renderConsoleFilterChips(games) {
+  const container = document.getElementById('console-filter-chips');
+  if (!container) return;
+  const seen = new Set();
+  games.forEach(g => {
+    const ids = g.playedOn && g.playedOn.length ? g.playedOn : (g.platform ? [g.platform] : []);
+    ids.forEach(id => seen.add(id));
+  });
+  if (seen.size === 0) { container.innerHTML = ''; return; }
+  let html = '<button class="chip' + (currentConsoleFilter === 'all' ? ' active' : '') + '" onclick="setConsoleFilter(\'all\')">All</button>';
+  seen.forEach(id => {
+    const c = CONSOLE_CATALOG.find(x => x.id === id);
+    if (!c) return;
+    html += '<button class="chip' + (currentConsoleFilter === id ? ' active' : '') + '" onclick="setConsoleFilter(\'' + id + '\')">' + c.short + '</button>';
+  });
+  container.innerHTML = html;
+}
+
+function setConsoleFilter(id) {
+  currentConsoleFilter = id;
+  renderLibrary();
 }
 
 function updateHomeStats() {
