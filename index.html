@@ -32,17 +32,20 @@
       </section>
 
       <section id="tab-wishlist" class="tab-panel">
-        <div class="page-header">
+        <div class="page-header-row">
           <h1>Wishlist</h1>
+          <button class="icon-btn" onclick="openWishlistSearch()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
         <div class="filter-chips">
-          <button class="chip active">All</button>
-          <button class="chip">PS5</button>
-          <button class="chip">Switch</button>
-          <button class="chip">Xbox</button>
-          <button class="chip">PC</button>
+          <button class="chip active" data-wfilter="all">All</button>
+          <button class="chip" data-wfilter="ps">PS5/PS4</button>
+          <button class="chip" data-wfilter="switch">Switch</button>
+          <button class="chip" data-wfilter="xbox">Xbox</button>
+          <button class="chip" data-wfilter="pc">PC</button>
         </div>
-        <div class="empty-state">Your wishlist is empty — search for games to add</div>
+        <div id="wishlist-list"></div>
       </section>
 
       <section id="tab-library" class="tab-panel">

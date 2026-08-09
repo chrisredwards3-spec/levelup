@@ -19,7 +19,11 @@ let ownedConsoles = [];
 let libraryGames = [];
 let filteredLibraryCache = [];
 let currentLibraryFilter = 'playing';
+let wishlistGames = [];
+let filteredWishlistCache = [];
+let currentWishlistFilter = 'all';
 let searchResultsCache = [];
+let searchContext = 'library';
 let pendingGame = null;
 let isEditing = false;
 let addStatus = 'playing';
@@ -48,10 +52,12 @@ document.querySelectorAll('.filter-tab').forEach(btn => {
 });
 
 // Wishlist filter chips
-document.querySelectorAll('.chip').forEach(chip => {
+document.querySelectorAll('[data-wfilter]').forEach(chip => {
   chip.addEventListener('click', () => {
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('[data-wfilter]').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
+    currentWishlistFilter = chip.dataset.wfilter;
+    renderWishlist();
   });
 });
 
@@ -187,10 +193,80 @@ function renderLibrary() {
 function updateHomeStats() {
   const played = libraryGames.filter(g => g.status !== 'dropped').length;
   const completed = libraryGames.filter(g => g.status === 'completed').length;
+  const elW = document.getElementById('stat-wishlist');
   const el = document.getElementById('stat-played');
   const el2 = document.getElementById('stat-completed');
+  if (elW) elW.textContent = wishlistGames.length;
   if (el) el.textContent = played;
   if (el2) el2.textContent = completed;
+}
+
+// ── Wishlist ───────────────────────────────────────────────────
+async function loadWishlist() {
+  try {
+    const res = await fetch('/api/wishlist');
+    wishlistGames = await res.json();
+  } catch (_) {
+    wishlistGames = [];
+  }
+  renderWishlist();
+  updateHomeStats();
+}
+
+function filterWishlist() {
+  if (currentWishlistFilter === 'all') return wishlistGames;
+  const checks = {
+    ps:     p => p === 'PS5' || p === 'PS4' || p === 'PS3',
+    switch: p => p.toLowerCase().includes('switch'),
+    xbox:   p => p === 'XONE' || p.includes('Series') || p === 'X360',
+    pc:     p => p === 'PC'
+  };
+  const fn = checks[currentWishlistFilter];
+  return fn ? wishlistGames.filter(g => g.platforms && g.platforms.some(fn)) : wishlistGames;
+}
+
+function renderWishlist() {
+  const list = document.getElementById('wishlist-list');
+  const filtered = filterWishlist();
+  filteredWishlistCache = filtered;
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state">Nothing here — tap + to add games</div>';
+    return;
+  }
+  list.innerHTML = filtered.map((g, i) => {
+    const coverHtml = g.cover
+      ? '<img class="game-card-cover" src="' + g.cover + '" alt="">'
+      : '<div class="game-card-cover-placeholder">🎮</div>';
+    const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 3).join(', ') : '';
+    const year = g.year ? ' · ' + g.year : '';
+    const mc = g.metacritic ? ' · MC ' + g.metacritic : '';
+    return '<div class="game-card">' +
+      coverHtml +
+      '<div class="game-card-body">' +
+        '<div class="game-card-title">' + g.name + '</div>' +
+        '<div class="game-card-meta">' + platforms + year + mc + '</div>' +
+      '</div>' +
+      '<button class="game-card-x" onclick="deleteWishlistItem(' + i + ')">×</button>' +
+    '</div>';
+  }).join('');
+}
+
+function deleteWishlistItem(idx) {
+  const game = filteredWishlistCache[idx];
+  if (!game) return;
+  wishlistGames = wishlistGames.filter(g => g !== game);
+  renderWishlist();
+  updateHomeStats();
+  fetch('/api/wishlist', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: game.id })
+  });
+}
+
+function openWishlistSearch() {
+  searchContext = 'wishlist';
+  openGameSearch();
 }
 
 // ── Game Search ────────────────────────────────────────────────
@@ -206,6 +282,7 @@ function closeGameSearch() {
   document.getElementById('search-sheet').classList.add('hidden');
   document.getElementById('search-backdrop').classList.add('hidden');
   document.getElementById('search-input').blur();
+  searchContext = 'library';
 }
 
 let searchTimeout;
@@ -254,13 +331,31 @@ function renderSearchResults(games) {
 }
 
 function selectResult(idx) {
-  pendingGame = searchResultsCache[idx];
+  const game = searchResultsCache[idx];
+  if (searchContext === 'wishlist') {
+    closeGameSearch();
+    addToWishlist(game);
+    return;
+  }
+  pendingGame = game;
   isEditing = false;
   addStatus = 'playing';
   addPlatform = [];
   scoreStr = '';
   closeGameSearch();
   openAddGame();
+}
+
+async function addToWishlist(game) {
+  if (wishlistGames.find(g => g.id === game.id)) return;
+  wishlistGames.push(Object.assign({}, game, { addedAt: Date.now() }));
+  renderWishlist();
+  updateHomeStats();
+  await fetch('/api/wishlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(game)
+  });
 }
 
 function openEditGame(idx) {
@@ -416,3 +511,4 @@ if ('serviceWorker' in navigator) {
 
 loadConsoles();
 loadLibrary();
+loadWishlist();
