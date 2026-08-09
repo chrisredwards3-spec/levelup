@@ -1,5 +1,10 @@
 name = "levelup"
 compatibility_date = "2024-09-23"
+main = "workers/api/index.js"
 
 [assets]
 directory = "."
+
+[[kv_namespaces]]
+binding = "KV"
+id = "13e9b54ffa1e4eac98e62d6d837abb06"
