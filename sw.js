@@ -1,4 +1,4 @@
-const CACHE = 'levelup-v13';
+const CACHE = 'levelup-v14';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {

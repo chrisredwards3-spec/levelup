@@ -279,6 +279,7 @@ html, body {
 
 .pill-playing  { border-color: var(--accent); color: var(--accent); }
 .pill-completed { border-color: #a78bfa; color: #a78bfa; }
+.pill-owned    { border-color: #fb923c; color: #fb923c; }
 .pill-dropped  { border-color: #f87171; color: #f87171; }
 .pill-time     { background: var(--surface-2); }
 
@@ -471,6 +472,7 @@ html, body {
 
 .status-pill.active-playing   { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 .status-pill.active-completed { border-color: #a78bfa; color: #a78bfa; background: rgba(167,139,250,0.1); }
+.status-pill.active-owned     { border-color: #fb923c; color: #fb923c; background: rgba(251,146,60,0.1); }
 .status-pill.active-dropped   { border-color: #f87171; color: #f87171; background: rgba(248,113,113,0.1); }
 
 /* Platform chips (played on) */
