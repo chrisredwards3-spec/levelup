@@ -173,6 +173,7 @@ function renderLibrary() {
         '</div>' +
       '</div>' +
       scoreHtml +
+      '<button class="game-card-delete" onclick="removeFromLibrary(' + g.id + ')">×</button>' +
     '</div>';
   }).join('');
 }
