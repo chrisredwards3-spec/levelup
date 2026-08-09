@@ -46,15 +46,18 @@
       </section>
 
       <section id="tab-library" class="tab-panel">
-        <div class="page-header">
+        <div class="page-header-row">
           <h1>Library</h1>
+          <button class="icon-btn" onclick="openGameSearch()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
         <div class="filter-tabs">
           <button class="filter-tab active" data-filter="playing">Playing</button>
           <button class="filter-tab" data-filter="completed">Completed</button>
           <button class="filter-tab" data-filter="dropped">Dropped</button>
         </div>
-        <div class="empty-state">Nothing here yet — start tracking your games</div>
+        <div id="library-list"></div>
       </section>
 
       <section id="tab-discover" class="tab-panel">
@@ -75,6 +78,24 @@
       </section>
 
     </main>
+
+    <!-- Game search sheet -->
+    <div id="search-backdrop" class="sheet-backdrop hidden" onclick="closeGameSearch()"></div>
+    <div id="search-sheet" class="sheet hidden">
+      <div class="sheet-handle"></div>
+      <div class="search-input-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search-input" type="text" placeholder="Search games..." autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div id="search-results"></div>
+    </div>
+
+    <!-- Add game / score sheet -->
+    <div id="add-backdrop" class="sheet-backdrop hidden" onclick="closeAddGame()"></div>
+    <div id="add-sheet" class="sheet hidden">
+      <div class="sheet-handle"></div>
+      <div id="add-game-content"></div>
+    </div>
 
     <!-- Add Console sheet -->
     <div id="console-backdrop" class="sheet-backdrop hidden" onclick="closeConsoleSheet()"></div>

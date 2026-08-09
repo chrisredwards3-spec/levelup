@@ -16,12 +16,10 @@ export default {
       return new Response(null, { headers: CORS });
     }
 
-    // API routes
     if (path.startsWith('/api/')) {
-      return handleApi(request, env, path);
+      return handleApi(request, env, path, url);
     }
 
-    // Static assets
     return env.ASSETS.fetch(request);
   },
 
@@ -34,19 +32,25 @@ export default {
   }
 };
 
-async function handleApi(request, env, path) {
+async function handleApi(request, env, path, url) {
   const method = request.method;
 
-  // Health check
   if (path === '/api/health') {
     return json({ status: 'ok' });
+  }
+
+  // Game search via IGDB
+  if (path === '/api/search' && method === 'GET') {
+    const q = url.searchParams.get('q') || '';
+    if (q.length < 2) return json([]);
+    const results = await searchIGDB(q, env);
+    return json(results);
   }
 
   // Consoles
   if (path === '/api/consoles') {
     if (method === 'GET') {
-      const data = await env.KV.get('consoles', 'json');
-      return json(data || []);
+      return json(await env.KV.get('consoles', 'json') || []);
     }
     if (method === 'POST') {
       const body = await request.json();
@@ -69,17 +73,16 @@ async function handleApi(request, env, path) {
   // Library
   if (path === '/api/library') {
     if (method === 'GET') {
-      const data = await env.KV.get('library', 'json');
-      return json(data || []);
+      return json(await env.KV.get('library', 'json') || []);
     }
     if (method === 'POST') {
       const body = await request.json();
       const library = await env.KV.get('library', 'json') || [];
       const idx = library.findIndex(g => g.id === body.id);
       if (idx >= 0) {
-        library[idx] = { ...library[idx], ...body };
+        library[idx] = Object.assign({}, library[idx], body);
       } else {
-        library.push({ ...body, addedAt: Date.now() });
+        library.push(Object.assign({}, body, { addedAt: Date.now(), dropCount: 0 }));
       }
       await env.KV.put('library', JSON.stringify(library));
       return json(library);
@@ -96,14 +99,13 @@ async function handleApi(request, env, path) {
   // Wishlist
   if (path === '/api/wishlist') {
     if (method === 'GET') {
-      const data = await env.KV.get('wishlist', 'json');
-      return json(data || []);
+      return json(await env.KV.get('wishlist', 'json') || []);
     }
     if (method === 'POST') {
       const body = await request.json();
       const wishlist = await env.KV.get('wishlist', 'json') || [];
       if (!wishlist.find(g => g.id === body.id)) {
-        wishlist.push({ ...body, addedAt: Date.now() });
+        wishlist.push(Object.assign({}, body, { addedAt: Date.now() }));
         await env.KV.put('wishlist', JSON.stringify(wishlist));
       }
       return json(wishlist);
@@ -117,26 +119,75 @@ async function handleApi(request, env, path) {
     }
   }
 
-  // Discover (cached AI recommendations)
   if (path === '/api/discover' && method === 'GET') {
-    const data = await env.KV.get('discover', 'json');
-    return json(data || { picks: [], buttonBoys: [], generatedAt: null });
+    return json(await env.KV.get('discover', 'json') || { picks: [], buttonBoys: [], generatedAt: null });
   }
 
-  // Button Boys data
   if (path === '/api/buttonboys' && method === 'GET') {
-    const data = await env.KV.get('buttonboys', 'json');
-    return json(data || []);
+    return json(await env.KV.get('buttonboys', 'json') || []);
   }
 
   return json({ error: 'Not found' }, 404);
 }
 
+// ── IGDB ────────────────────────────────────────────────────────
+
+async function getIGDBToken(env) {
+  const cached = await env.KV.get('igdb:token', 'json');
+  if (cached && cached.expires > Date.now()) return cached.token;
+
+  const res = await fetch(
+    'https://id.twitch.tv/oauth2/token?client_id=' + env.IGDB_CLIENT_ID +
+    '&client_secret=' + env.IGDB_CLIENT_SECRET +
+    '&grant_type=client_credentials',
+    { method: 'POST' }
+  );
+  const data = await res.json();
+  await env.KV.put('igdb:token', JSON.stringify({
+    token: data.access_token,
+    expires: Date.now() + (data.expires_in - 3600) * 1000
+  }));
+  return data.access_token;
+}
+
+async function searchIGDB(query, env) {
+  const token = await getIGDBToken(env);
+  const safe = query.replace(/"/g, '');
+  const body = 'fields name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating,time_to_beat.normally;' +
+    ' search "' + safe + '";' +
+    ' limit 10;' +
+    ' where version_parent = null & category = 0;';
+
+  const res = await fetch('https://api.igdb.com/v4/games', {
+    method: 'POST',
+    headers: {
+      'Client-ID': env.IGDB_CLIENT_ID,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'text/plain'
+    },
+    body
+  });
+
+  const games = await res.json();
+  if (!Array.isArray(games)) return [];
+
+  return games.map(g => ({
+    id: g.id,
+    name: g.name,
+    cover: g.cover ? g.cover.url.replace('t_thumb', 't_cover_big').replace('//', 'https://') : null,
+    platforms: g.platforms ? g.platforms.map(p => p.abbreviation).filter(Boolean) : [],
+    year: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null,
+    metacritic: g.aggregated_rating ? Math.round(g.aggregated_rating) : null,
+    timeToBeat: g.time_to_beat && g.time_to_beat.normally ? Math.round(g.time_to_beat.normally / 360) / 10 : null
+  }));
+}
+
+// ── Crons ────────────────────────────────────────────────────────
+
 async function syncButtonBoys(env) {
   const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1PsPTg3wdyT11EZ9SnWPoDf_-BXXb_thBBmrRtSvZwmk/export?format=csv&gid=0';
   const res = await fetch(SHEET_URL);
   const csv = await res.text();
-  // TODO: parse CSV rows into structured data
   await env.KV.put('buttonboys:raw', csv);
 }
 
