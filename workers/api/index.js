@@ -183,6 +183,16 @@ async function handleApi(request, env, path, url) {
     }
   }
 
+  if (path === '/api/mood' && method === 'POST') {
+    try {
+      const body = await request.json();
+      const result = await getMoodPick(body.history || [], env);
+      return json(result);
+    } catch (err) {
+      return json({ error: err.message }, 500);
+    }
+  }
+
   if (path === '/api/discover' && method === 'GET') {
     const cached = await env.KV.get('discover:ai', 'json');
     const threeDays = 3 * 24 * 60 * 60 * 1000;
@@ -317,6 +327,49 @@ async function searchIGDB(query, env) {
     metacritic: g.aggregated_rating ? Math.round(g.aggregated_rating) : null,
     timeToBeat: ttbMap[g.id] || null
   }));
+}
+
+// ── Mood Picker ──────────────────────────────────────────────────
+
+async function getMoodPick(history, env) {
+  const apiKey = await env.KV.get('config:anthropic_api_key');
+  if (!apiKey) throw new Error('no_key');
+
+  const library = await env.KV.get('library', 'json') || [];
+  const wishlist = await env.KV.get('wishlist', 'json') || [];
+
+  const finished = library
+    .filter(g => g.status === 'completed' && g.score != null)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(g => g.name + ' (' + g.score + '/10)').join(', ');
+
+  const exclude = library.map(g => g.name).concat(wishlist.map(g => g.name)).join(', ');
+
+  const historyStr = history.length
+    ? 'Questions asked so far:\n' + history.map(h => 'Q: ' + h.question + '\nA: ' + h.answer).join('\n') + '\n\n'
+    : '';
+
+  const prompt = history.length >= 5
+    ? 'You are a game recommender. User taste: ' + finished + '. Do not recommend: ' + exclude + '.\n\n' +
+      historyStr +
+      'You have enough info. Recommend exactly 3 games that match their answers. Only recommend games with Metacritic 70+. Return ONLY valid JSON:\n' +
+      '{"type":"picks","intro":"one friendly sentence","picks":[{"name":"exact title","reason":"why it fits their answers","platforms":["PS5","Switch"],"metacritic":85,"timeToBeat":20,"train":false}]}'
+    : 'You are a game recommender helping someone pick what to play right now. User taste: ' + finished + '.\n\n' +
+      historyStr +
+      'Ask question ' + (history.length + 1) + ' of 5. Keep it short and punchy. Cover things like: time available, genre/vibe, mood/setting, play style, home or on the go. Return ONLY valid JSON:\n' +
+      '{"type":"question","text":"short question","options":["option1","option2","option3","option4"]}';
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 512, messages: [{ role: 'user', content: prompt }] })
+  });
+
+  const data = await res.json();
+  let text = data.content && data.content[0] ? data.content[0].text : '{}';
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  return JSON.parse(text);
 }
 
 // ── Button Boys ──────────────────────────────────────────────────

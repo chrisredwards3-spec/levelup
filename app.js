@@ -605,6 +605,10 @@ async function removeFromLibrary(id) {
 }
 
 let aiPicksCache = [];
+let moodHistory = [];
+let moodPicksCache = [];
+let currentMoodQuestion = '';
+let currentMoodOptions = [];
 
 // ── Discover ───────────────────────────────────────────────────
 async function loadDiscover() {
@@ -738,6 +742,126 @@ function renderButtonBoys(episodes) {
       '<div class="discover-card-pills">' + mc + (priceStr ? '<span class="pill pill-price">From ' + priceStr + '</span>' : '') + '</div>' +
     '</div>';
   }).join('');
+}
+
+// ── Mood Picker ────────────────────────────────────────────────
+function openMoodSheet() {
+  moodHistory = [];
+  moodPicksCache = [];
+  currentMoodQuestion = '';
+  currentMoodOptions = [];
+  document.getElementById('mood-sheet').classList.remove('hidden');
+  document.getElementById('mood-backdrop').classList.remove('hidden');
+  const content = document.getElementById('mood-content');
+  content.style.overflowY = 'scroll';
+  fetchMoodStep();
+}
+
+function closeMoodSheet() {
+  document.getElementById('mood-sheet').classList.add('hidden');
+  document.getElementById('mood-backdrop').classList.add('hidden');
+  moodHistory = [];
+}
+
+async function fetchMoodStep() {
+  document.getElementById('mood-content').innerHTML = '<div class="mood-loading">Thinking...</div>';
+  try {
+    const res = await fetch('/api/mood', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: moodHistory })
+    });
+    const data = await res.json();
+    renderMoodStep(data);
+  } catch (_) {
+    document.getElementById('mood-content').innerHTML = '<div class="empty-state">Something went wrong — try again</div>';
+  }
+}
+
+function renderMoodStep(data) {
+  const content = document.getElementById('mood-content');
+  if (!data || data.error) {
+    content.innerHTML = '<div class="empty-state">Could not get a response</div>';
+    return;
+  }
+
+  let historyHtml = '';
+  if (moodHistory.length) {
+    historyHtml = '<div class="mood-history">' +
+      moodHistory.map(h =>
+        '<div class="mood-history-item">' +
+          '<div class="mood-history-q">' + h.question + '</div>' +
+          '<div class="mood-history-a">' + h.answer + '</div>' +
+        '</div>'
+      ).join('') +
+    '</div>';
+  }
+
+  if (data.type === 'question') {
+    currentMoodQuestion = data.text;
+    currentMoodOptions = data.options || [];
+    const progress = moodHistory.length + 1;
+    const optionsHtml = currentMoodOptions.map((opt, i) =>
+      '<button class="mood-option-btn" onclick="selectMoodOption(' + i + ')">' + opt + '</button>'
+    ).join('');
+    content.innerHTML =
+      historyHtml +
+      '<div class="mood-progress">Question ' + progress + ' of 5</div>' +
+      '<div class="mood-question">' + data.text + '</div>' +
+      '<div class="mood-options">' + optionsHtml + '</div>';
+  } else if (data.type === 'picks') {
+    moodPicksCache = data.picks || [];
+    const picksHtml = moodPicksCache.map((p, i) => {
+      const platforms = p.platforms && p.platforms.length ? p.platforms.join(', ') : '';
+      const mc = p.metacritic ? ' · MC ' + p.metacritic : '';
+      const ttb = p.timeToBeat ? ' · ⏱ ' + p.timeToBeat + 'h' : '';
+      const badge = p.train ? '<span class="pick-badge pick-badge-train">Train</span>' : '<span class="pick-badge pick-badge-sofa">Sofa</span>';
+      return '<div class="discover-card">' +
+        '<div class="discover-card-header">' +
+          '<div class="discover-card-title">' + p.name + '</div>' +
+          badge +
+        '</div>' +
+        '<div class="discover-card-meta">' + platforms + mc + ttb + '</div>' +
+        '<div class="discover-card-reason">' + p.reason + '</div>' +
+        '<div class="discover-card-actions">' +
+          '<button class="pick-action-btn" onclick="addMoodPickToWishlist(' + i + ')">+ Wishlist</button>' +
+          '<button class="pick-action-btn" onclick="openMoodPickLink(' + i + ')">More info</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    content.innerHTML =
+      historyHtml +
+      '<div class="mood-picks-intro">' + (data.intro || 'Based on your answers...') + '</div>' +
+      picksHtml +
+      '<button class="btn-secondary" onclick="openMoodSheet()" style="margin-top:12px">Start again</button>';
+  }
+}
+
+function selectMoodOption(idx) {
+  const answer = currentMoodOptions[idx];
+  if (!answer) return;
+  moodHistory.push({ question: currentMoodQuestion, answer });
+  fetchMoodStep();
+}
+
+function openMoodPickLink(idx) {
+  const pick = moodPicksCache[idx];
+  if (pick) window.open('https://www.google.com/search?q=' + encodeURIComponent(pick.name + ' video game'), '_blank');
+}
+
+async function addMoodPickToWishlist(idx) {
+  const pick = moodPicksCache[idx];
+  if (!pick) return;
+  const res = await fetch('/api/search?q=' + encodeURIComponent(pick.name));
+  const results = await res.json();
+  if (!Array.isArray(results) || !results.length) return;
+  closeMoodSheet();
+  pendingGame = results[0];
+  isWishlistAdd = true;
+  addPlatform = [];
+  renderWishlistAddSheet();
+  document.getElementById('add-sheet').classList.remove('hidden');
+  document.getElementById('add-backdrop').classList.remove('hidden');
 }
 
 // ── Init ───────────────────────────────────────────────────────
