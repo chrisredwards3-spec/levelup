@@ -1,4 +1,4 @@
-const CACHE = 'levelup-v4';
+const CACHE = 'levelup-v5';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -17,6 +17,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('/api/')) return; // never cache API calls
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
