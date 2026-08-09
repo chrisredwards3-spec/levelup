@@ -121,7 +121,28 @@ async function handleApi(request, env, path, url) {
   // Wishlist
   if (path === '/api/wishlist') {
     if (method === 'GET') {
-      return json(await env.KV.get('wishlist', 'json') || []);
+      let wishlist = await env.KV.get('wishlist', 'json') || [];
+      const missing = wishlist.filter(g => g.id && g.timeToBeat == null);
+      if (missing.length) {
+        try {
+          const ids = missing.map(g => g.id);
+          const token = await getIGDBToken(env);
+          const clientId = await env.KV.get('config:igdb_client_id');
+          const ttbRes = await fetch('https://api.igdb.com/v4/game_time_to_beats', {
+            method: 'POST',
+            headers: { 'Client-ID': clientId, 'Authorization': 'Bearer ' + token, 'Content-Type': 'text/plain' },
+            body: 'fields game_id,normally;\nwhere game_id = (' + ids.join(',') + ');\nlimit ' + ids.length + ';'
+          });
+          const ttbData = await ttbRes.json();
+          if (Array.isArray(ttbData)) {
+            const ttbMap = {};
+            ttbData.forEach(t => { if (t.normally) ttbMap[t.game_id] = Math.round(t.normally / 3600); });
+            wishlist = wishlist.map(g => ttbMap[g.id] ? Object.assign({}, g, { timeToBeat: ttbMap[g.id] }) : g);
+            await env.KV.put('wishlist', JSON.stringify(wishlist));
+          }
+        } catch (_) {}
+      }
+      return json(wishlist);
     }
     if (method === 'POST') {
       const body = await request.json();
