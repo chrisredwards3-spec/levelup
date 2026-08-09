@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Level Up">
+  <meta name="theme-color" content="#111111">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Level Up</title>
+</head>
+<body>
+  <div id="app">
+    <main id="content">
+
+      <section id="tab-home" class="tab-panel active">
+        <div class="page-header">
+          <h1 class="app-logo">LEVEL UP</h1>
+          <p class="stats-line">
+            <span id="stat-wishlist">0</span> on wishlist &middot;
+            <span id="stat-played">0</span> played &middot;
+            <span id="stat-completed">0</span> completed
+          </p>
+        </div>
+        <div class="section-label">Price Alerts</div>
+        <div class="empty-state">No price alerts yet — add games to your wishlist</div>
+        <div class="section-label">Button Boys Picks</div>
+        <div class="empty-state">Syncing this week's episode...</div>
+      </section>
+
+      <section id="tab-wishlist" class="tab-panel">
+        <div class="page-header">
+          <h1>Wishlist</h1>
+        </div>
+        <div class="filter-chips">
+          <button class="chip active">All</button>
+          <button class="chip">PS5</button>
+          <button class="chip">Switch</button>
+          <button class="chip">Xbox</button>
+          <button class="chip">PC</button>
+        </div>
+        <div class="empty-state">Your wishlist is empty — search for games to add</div>
+      </section>
+
+      <section id="tab-library" class="tab-panel">
+        <div class="page-header">
+          <h1>Library</h1>
+        </div>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="playing">Playing</button>
+          <button class="filter-tab" data-filter="completed">Completed</button>
+          <button class="filter-tab" data-filter="dropped">Dropped</button>
+        </div>
+        <div class="empty-state">Nothing here yet — start tracking your games</div>
+      </section>
+
+      <section id="tab-discover" class="tab-panel">
+        <div class="page-header">
+          <h1>Discover</h1>
+        </div>
+        <div class="section-label">AI Picks for You</div>
+        <div class="empty-state">Add some games to your library to get recommendations</div>
+        <div class="section-label">Button Boys Recommends</div>
+        <div class="empty-state">Syncing episode data...</div>
+      </section>
+
+      <section id="tab-consoles" class="tab-panel">
+        <div class="page-header">
+          <h1>My Consoles</h1>
+        </div>
+        <div class="empty-state">No consoles added yet</div>
+        <button class="btn-primary">+ Add Console</button>
+      </section>
+
+    </main>
+
+    <nav id="bottom-nav">
+      <button class="nav-item active" data-tab="home">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" data-tab="wishlist">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <span>Wishlist</span>
+      </button>
+      <button class="nav-item" data-tab="library">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span>Library</span>
+      </button>
+      <button class="nav-item" data-tab="discover">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+        </svg>
+        <span>Discover</span>
+      </button>
+      <button class="nav-item" data-tab="consoles">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M6 12h4M8 10v4"/>
+          <circle cx="16" cy="12" r="1" fill="currentColor"/>
+          <circle cx="18" cy="10" r="1" fill="currentColor"/>
+        </svg>
+        <span>Consoles</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

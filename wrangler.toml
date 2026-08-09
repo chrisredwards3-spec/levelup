@@ -1,0 +1,7 @@
+name = "levelup"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "KV"
+id = "PLACEHOLDER_REPLACE_WITH_REAL_KV_ID"
