@@ -51,12 +51,17 @@ async function handleApi(request, env, path, url) {
     }
   }
 
-  // Debug — check env vars are bound (remove after fix)
+  // Debug
   if (path === '/api/debug' && method === 'GET') {
+    const clientId = await env.KV.get('config:igdb_client_id');
+    const clientSecret = await env.KV.get('config:igdb_client_secret');
+    const token = await env.KV.get('igdb:token', 'json');
     return json({
-      hasClientId: !!env.IGDB_CLIENT_ID,
-      hasClientSecret: !!env.IGDB_CLIENT_SECRET,
-      clientIdLen: env.IGDB_CLIENT_ID ? env.IGDB_CLIENT_ID.length : 0
+      hasClientId: !!clientId,
+      clientIdLen: clientId ? clientId.length : 0,
+      hasClientSecret: !!clientSecret,
+      hasToken: !!token,
+      tokenExpired: token ? token.expires < Date.now() : null
     });
   }
 
