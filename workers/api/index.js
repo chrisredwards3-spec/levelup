@@ -190,7 +190,7 @@ async function searchIGDB(query, env) {
 
   const raw = await res.json();
   if (!Array.isArray(raw)) throw new Error('IGDB returned: ' + JSON.stringify(raw));
-  const games = raw;
+  return raw; // DEBUG: return raw before map
 
   return games.map(g => ({
     id: g.id,
