@@ -143,8 +143,8 @@ async function handleApi(request, env, path, url) {
 
   if (path === '/api/discover' && method === 'GET') {
     const cached = await env.KV.get('discover:ai', 'json');
-    const week = 7 * 24 * 60 * 60 * 1000;
-    if (cached && cached.generatedAt && (Date.now() - cached.generatedAt) < week) {
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    if (cached && cached.generatedAt && (Date.now() - cached.generatedAt) < threeDays) {
       return json(cached);
     }
     try {
@@ -337,8 +337,8 @@ async function getAIPicks(env) {
 
   const prompt = 'Games this person has finished and rated: ' + finishedList + '\n\n' +
     'Games they already own, are playing, or have wishlisted (DO NOT recommend any of these): ' + alreadyKnown + '\n\n' +
-    'Recommend exactly 4 games they would enjoy that are not in either list above. ' +
-    'Split them as: 2 larger games best played at home in long sessions, and 2 games ideal for a train journey (must have good short-session play, must be completely safe for public viewing - no sexual content, no graphic violence visible on screen, nothing NSFW). ' +
+    'Recommend exactly 8 games they would enjoy that are not in either list above. ' +
+    'Split them as: 4 larger games best played at home in long sessions (train:false), and 4 games ideal for a train journey — must have natural short-session play, must be completely safe for public viewing, no sexual content, no graphic violence on screen, nothing NSFW (train:true). ' +
     'Return ONLY a valid JSON array, no markdown, no explanation:\n' +
     '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"],"train":false}]';
 

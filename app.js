@@ -602,6 +602,8 @@ async function removeFromLibrary(id) {
   await loadLibrary();
 }
 
+let aiPicksCache = [];
+
 // ── Discover ───────────────────────────────────────────────────
 async function loadDiscover() {
   loadAIPicks();
@@ -650,6 +652,7 @@ function renderAIPicks(data) {
     el.innerHTML = '<div class="empty-state">No picks yet — tap refresh</div>';
     return;
   }
+  aiPicksCache = data.picks;
   const sofa = data.picks.filter(p => !p.train);
   const train = data.picks.filter(p => p.train);
   let html = '';
@@ -665,6 +668,7 @@ function renderAIPicks(data) {
 }
 
 function pickCard(p) {
+  const idx = aiPicksCache.indexOf(p);
   const platforms = p.platforms && p.platforms.length ? p.platforms.join(', ') : '';
   const badge = p.train ? '<span class="pick-badge pick-badge-train">Train</span>' : '<span class="pick-badge pick-badge-sofa">Sofa</span>';
   return '<div class="discover-card">' +
@@ -674,7 +678,30 @@ function pickCard(p) {
     '</div>' +
     (platforms ? '<div class="discover-card-meta">' + platforms + '</div>' : '') +
     '<div class="discover-card-reason">' + p.reason + '</div>' +
+    '<div class="discover-card-actions">' +
+      '<button class="pick-action-btn" onclick="addPickToWishlist(' + idx + ')">+ Wishlist</button>' +
+      '<button class="pick-action-btn" onclick="openPickLink(' + idx + ')">More info</button>' +
+    '</div>' +
   '</div>';
+}
+
+function openPickLink(idx) {
+  const pick = aiPicksCache[idx];
+  if (pick) window.open('https://www.google.com/search?q=' + encodeURIComponent(pick.name + ' video game'), '_blank');
+}
+
+async function addPickToWishlist(idx) {
+  const pick = aiPicksCache[idx];
+  if (!pick) return;
+  const res = await fetch('/api/search?q=' + encodeURIComponent(pick.name));
+  const results = await res.json();
+  if (!Array.isArray(results) || !results.length) return;
+  pendingGame = results[0];
+  isWishlistAdd = true;
+  addPlatform = [];
+  renderWishlistAddSheet();
+  document.getElementById('add-sheet').classList.remove('hidden');
+  document.getElementById('add-backdrop').classList.remove('hidden');
 }
 
 async function loadButtonBoys() {

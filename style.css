@@ -158,6 +158,22 @@ html, body {
 .pick-badge-sofa { background: rgba(167,139,250,0.15); color: #a78bfa; }
 .pick-badge-train { background: rgba(251,146,60,0.15); color: #fb923c; }
 
+.discover-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pick-action-btn {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .discover-card-reason {
   font-size: 13px;
   color: var(--text-muted);
