@@ -306,7 +306,8 @@ function renderAddSheet() {
     '<button class="platform-chip' + (addPlatform === p.id ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
   ).join('');
 
-  const deleteBtn = isEditing
+  const inLibrary = libraryGames.some(entry => entry.id === g.id);
+  const deleteBtn = inLibrary
     ? '<button class="btn-delete" onclick="confirmDelete()">Remove from Library</button>'
     : '';
 
