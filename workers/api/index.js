@@ -149,9 +149,13 @@ async function getIGDBToken(env) {
   const cached = await env.KV.get('igdb:token', 'json');
   if (cached && cached.expires > Date.now()) return cached.token;
 
+  const clientId = await env.KV.get('config:igdb_client_id');
+  const clientSecret = await env.KV.get('config:igdb_client_secret');
+  if (!clientId || !clientSecret) throw new Error('IGDB credentials not configured in KV');
+
   const res = await fetch(
-    'https://id.twitch.tv/oauth2/token?client_id=' + env.IGDB_CLIENT_ID +
-    '&client_secret=' + env.IGDB_CLIENT_SECRET +
+    'https://id.twitch.tv/oauth2/token?client_id=' + clientId +
+    '&client_secret=' + clientSecret +
     '&grant_type=client_credentials',
     { method: 'POST' }
   );
