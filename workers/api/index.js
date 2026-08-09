@@ -43,8 +43,21 @@ async function handleApi(request, env, path, url) {
   if (path === '/api/search' && method === 'GET') {
     const q = url.searchParams.get('q') || '';
     if (q.length < 2) return json([]);
-    const results = await searchIGDB(q, env);
-    return json(results);
+    try {
+      const results = await searchIGDB(q, env);
+      return json(results);
+    } catch (err) {
+      return json({ error: err.message }, 500);
+    }
+  }
+
+  // Debug — check env vars are bound (remove after fix)
+  if (path === '/api/debug' && method === 'GET') {
+    return json({
+      hasClientId: !!env.IGDB_CLIENT_ID,
+      hasClientSecret: !!env.IGDB_CLIENT_SECRET,
+      clientIdLen: env.IGDB_CLIENT_ID ? env.IGDB_CLIENT_ID.length : 0
+    });
   }
 
   // Consoles
