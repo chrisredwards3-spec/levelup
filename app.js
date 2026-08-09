@@ -10,6 +10,8 @@ const CONSOLE_CATALOG = [
   { id: 'pc',         name: 'Windows PC',           short: 'PC',   color: '#0078d4', platform: 'pc' },
   { id: 'mac',        name: 'Mac',                  short: 'Mac',  color: '#555555', platform: 'mac' },
   { id: 'ps-portal',  name: 'PS Portal',            short: 'PSP',  color: '#0070cc', platform: 'ps5' },
+  { id: 'ios',        name: 'iPhone / iOS',         short: 'iOS',  color: '#1c1c1e', platform: 'ios' },
+  { id: 'ipad',       name: 'iPad',                 short: 'iPad', color: '#1c1c1e', platform: 'ios' },
 ];
 
 let ownedConsoles = [];
