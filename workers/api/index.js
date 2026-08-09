@@ -45,7 +45,7 @@ async function handleApi(request, env, path, url) {
     if (q.length < 2) return json([]);
     try {
       const results = await searchIGDB(q, env);
-      return json(results);
+      return json({ debug: true, results });
     } catch (err) {
       return json({ error: err.message }, 500);
     }
@@ -176,9 +176,7 @@ async function searchIGDB(query, env) {
   const token = await getIGDBToken(env);
   const clientId = await env.KV.get('config:igdb_client_id');
   const safe = query.replace(/"/g, '');
-  const body = 'fields name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating,time_to_beat.normally;' +
-    ' search "' + safe + '";' +
-    ' limit 10;';
+  const body = 'fields id,name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating,time_to_beat.normally;\nsearch "' + safe + '";\nlimit 10;';
 
   const res = await fetch('https://api.igdb.com/v4/games', {
     method: 'POST',
@@ -190,8 +188,9 @@ async function searchIGDB(query, env) {
     body
   });
 
-  const games = await res.json();
-  if (!Array.isArray(games)) throw new Error('IGDB returned: ' + JSON.stringify(games));
+  const raw = await res.json();
+  if (!Array.isArray(raw)) throw new Error('IGDB returned: ' + JSON.stringify(raw));
+  const games = raw;
 
   return games.map(g => ({
     id: g.id,
