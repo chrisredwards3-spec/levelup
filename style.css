@@ -129,6 +129,35 @@ html, body {
   color: var(--text-muted);
   margin-bottom: 6px;
 }
+.picks-sublabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 12px 0 8px;
+}
+.discover-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.discover-card-header .discover-card-title {
+  margin-bottom: 0;
+}
+.pick-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pick-badge-sofa { background: rgba(167,139,250,0.15); color: #a78bfa; }
+.pick-badge-train { background: rgba(251,146,60,0.15); color: #fb923c; }
+
 .discover-card-reason {
   font-size: 13px;
   color: var(--text-muted);

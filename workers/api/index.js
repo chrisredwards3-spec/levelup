@@ -336,10 +336,11 @@ async function getAIPicks(env) {
   const alreadyKnown = library.map(g => g.name).concat(wishlist.map(g => g.name)).join(', ');
 
   const prompt = 'Games this person has finished and rated: ' + finishedList + '\n\n' +
-    'Games they already own, are playing, or have wishlisted (DO NOT recommend these): ' + alreadyKnown + '\n\n' +
+    'Games they already own, are playing, or have wishlisted (DO NOT recommend any of these): ' + alreadyKnown + '\n\n' +
     'Recommend exactly 4 games they would enjoy that are not in either list above. ' +
+    'Split them as: 2 larger games best played at home in long sessions, and 2 games ideal for a train journey (must have good short-session play, must be completely safe for public viewing - no sexual content, no graphic violence visible on screen, nothing NSFW). ' +
     'Return ONLY a valid JSON array, no markdown, no explanation:\n' +
-    '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"]}]';
+    '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"],"train":false}]';
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

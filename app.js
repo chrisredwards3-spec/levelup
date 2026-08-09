@@ -650,14 +650,31 @@ function renderAIPicks(data) {
     el.innerHTML = '<div class="empty-state">No picks yet — tap refresh</div>';
     return;
   }
-  el.innerHTML = data.picks.map(p => {
-    const platforms = p.platforms && p.platforms.length ? p.platforms.join(', ') : '';
-    return '<div class="discover-card">' +
+  const sofa = data.picks.filter(p => !p.train);
+  const train = data.picks.filter(p => p.train);
+  let html = '';
+  if (sofa.length) {
+    html += '<div class="picks-sublabel">For the sofa</div>';
+    html += sofa.map(p => pickCard(p)).join('');
+  }
+  if (train.length) {
+    html += '<div class="picks-sublabel">For the train</div>';
+    html += train.map(p => pickCard(p)).join('');
+  }
+  el.innerHTML = html;
+}
+
+function pickCard(p) {
+  const platforms = p.platforms && p.platforms.length ? p.platforms.join(', ') : '';
+  const badge = p.train ? '<span class="pick-badge pick-badge-train">Train</span>' : '<span class="pick-badge pick-badge-sofa">Sofa</span>';
+  return '<div class="discover-card">' +
+    '<div class="discover-card-header">' +
       '<div class="discover-card-title">' + p.name + '</div>' +
-      (platforms ? '<div class="discover-card-meta">' + platforms + '</div>' : '') +
-      '<div class="discover-card-reason">' + p.reason + '</div>' +
-    '</div>';
-  }).join('');
+      badge +
+    '</div>' +
+    (platforms ? '<div class="discover-card-meta">' + platforms + '</div>' : '') +
+    '<div class="discover-card-reason">' + p.reason + '</div>' +
+  '</div>';
 }
 
 async function loadButtonBoys() {
