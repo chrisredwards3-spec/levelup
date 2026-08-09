@@ -352,7 +352,8 @@ async function getAIPicks(env) {
   });
 
   const data = await res.json();
-  const text = data.content && data.content[0] ? data.content[0].text : '[]';
+  let text = data.content && data.content[0] ? data.content[0].text : '[]';
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
   const picks = JSON.parse(text);
   const result = { picks, generatedAt: Date.now() };
   await env.KV.put('discover:ai', JSON.stringify(result));
