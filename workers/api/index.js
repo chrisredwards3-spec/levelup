@@ -142,11 +142,42 @@ async function handleApi(request, env, path, url) {
   }
 
   if (path === '/api/discover' && method === 'GET') {
-    return json(await env.KV.get('discover', 'json') || { picks: [], buttonBoys: [], generatedAt: null });
+    const cached = await env.KV.get('discover:ai', 'json');
+    const week = 7 * 24 * 60 * 60 * 1000;
+    if (cached && cached.generatedAt && (Date.now() - cached.generatedAt) < week) {
+      return json(cached);
+    }
+    try {
+      const result = await getAIPicks(env);
+      return json(result);
+    } catch (err) {
+      return json({ picks: [], generatedAt: null, error: err.message });
+    }
+  }
+
+  if (path === '/api/discover/refresh' && method === 'POST') {
+    try {
+      await env.KV.delete('discover:ai');
+      const result = await getAIPicks(env);
+      return json(result);
+    } catch (err) {
+      return json({ picks: [], generatedAt: null, error: err.message }, 500);
+    }
   }
 
   if (path === '/api/buttonboys' && method === 'GET') {
-    return json(await env.KV.get('buttonboys', 'json') || []);
+    const cached = await env.KV.get('buttonboys', 'json');
+    const day = 24 * 60 * 60 * 1000;
+    if (cached && cached.fetchedAt && (Date.now() - cached.fetchedAt) < day) {
+      return json(cached.episodes);
+    }
+    try {
+      const episodes = await fetchAndParseButtonBoys();
+      await env.KV.put('buttonboys', JSON.stringify({ episodes, fetchedAt: Date.now() }));
+      return json(episodes);
+    } catch (err) {
+      return json(cached ? cached.episodes : []);
+    }
   }
 
   return json({ error: 'Not found' }, 404);
@@ -227,13 +258,114 @@ async function searchIGDB(query, env) {
   }));
 }
 
-// ── Crons ────────────────────────────────────────────────────────
+// ── Button Boys ──────────────────────────────────────────────────
 
-async function syncButtonBoys(env) {
+function parseCSVRow(line) {
+  const cells = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+    else { cur += ch; }
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+async function fetchAndParseButtonBoys() {
   const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1PsPTg3wdyT11EZ9SnWPoDf_-BXXb_thBBmrRtSvZwmk/export?format=csv&gid=0';
   const res = await fetch(SHEET_URL);
   const csv = await res.text();
-  await env.KV.put('buttonboys:raw', csv);
+  const lines = csv.split('\n');
+
+  let dataStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes('HIDDEN CACHE EPISODE')) { dataStart = i + 1; break; }
+  }
+  if (dataStart === -1) return [];
+
+  const platCols = [
+    { name: 'PS', idx: 5 },
+    { name: 'Xbox', idx: 6 },
+    { name: 'Switch', idx: 7 },
+    { name: 'PC', idx: 8 },
+    { name: 'iOS', idx: 9 },
+    { name: 'Android', idx: 10 }
+  ];
+
+  const episodes = [];
+  for (let i = dataStart; i < lines.length - 1; i += 2) {
+    const info = parseCSVRow(lines[i]);
+    const prices = parseCSVRow(lines[i + 1]);
+    const epNum = info[1];
+    const game = info[3];
+    if (!epNum || !game || isNaN(parseInt(epNum))) continue;
+    const platforms = platCols
+      .filter(p => info[p.idx])
+      .map(p => ({ name: p.name, price: prices[p.idx] || null }));
+    episodes.push({
+      episode: parseInt(epNum),
+      episodeName: info[2] || '',
+      game,
+      metacritic: info[4] ? parseInt(info[4]) : null,
+      platforms
+    });
+  }
+  return episodes.sort((a, b) => b.episode - a.episode);
+}
+
+// ── AI Picks ─────────────────────────────────────────────────────
+
+async function getAIPicks(env) {
+  const apiKey = await env.KV.get('config:anthropic_api_key');
+  if (!apiKey) return { picks: [], generatedAt: null, message: 'no_key' };
+
+  const library = await env.KV.get('library', 'json') || [];
+  const finished = library
+    .filter(g => g.status === 'completed' && g.score != null)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 15);
+
+  if (finished.length < 3) return { picks: [], generatedAt: null, message: 'not_enough_games' };
+
+  const gameList = finished.map(g => g.name + ' (' + g.score + '/10)').join(', ');
+
+  const prompt = 'Games this person has finished and rated: ' + gameList + '\n\n' +
+    'Recommend exactly 4 games they would enjoy that are NOT in their list. ' +
+    'Return ONLY a valid JSON array, no markdown, no explanation:\n' +
+    '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"]}]';
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  const data = await res.json();
+  const text = data.content && data.content[0] ? data.content[0].text : '[]';
+  const picks = JSON.parse(text);
+  const result = { picks, generatedAt: Date.now() };
+  await env.KV.put('discover:ai', JSON.stringify(result));
+  return result;
+}
+
+// ── Crons ────────────────────────────────────────────────────────
+
+async function syncButtonBoys(env) {
+  try {
+    const episodes = await fetchAndParseButtonBoys();
+    await env.KV.put('buttonboys', JSON.stringify({ episodes, fetchedAt: Date.now() }));
+  } catch (_) {}
 }
 
 async function checkPrices(env) {

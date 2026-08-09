@@ -557,6 +557,98 @@ async function removeFromLibrary(id) {
   await loadLibrary();
 }
 
+// ── Discover ───────────────────────────────────────────────────
+async function loadDiscover() {
+  loadAIPicks();
+  loadButtonBoys();
+}
+
+async function loadAIPicks() {
+  const el = document.getElementById('ai-picks-list');
+  try {
+    const res = await fetch('/api/discover');
+    const data = await res.json();
+    renderAIPicks(data);
+  } catch (_) {
+    el.innerHTML = '<div class="empty-state">Could not load recommendations</div>';
+  }
+}
+
+async function refreshAIPicks() {
+  const btn = document.getElementById('refresh-picks-btn');
+  const el = document.getElementById('ai-picks-list');
+  if (btn) btn.style.opacity = '0.4';
+  el.innerHTML = '<div class="empty-state">Generating picks...</div>';
+  try {
+    const res = await fetch('/api/discover/refresh', { method: 'POST' });
+    const data = await res.json();
+    renderAIPicks(data);
+  } catch (_) {
+    el.innerHTML = '<div class="empty-state">Could not refresh</div>';
+  } finally {
+    if (btn) btn.style.opacity = '';
+  }
+}
+
+function renderAIPicks(data) {
+  const el = document.getElementById('ai-picks-list');
+  if (!el) return;
+  if (data.message === 'no_key') {
+    el.innerHTML = '<div class="empty-state">Add your Anthropic API key to KV to enable AI picks</div>';
+    return;
+  }
+  if (data.message === 'not_enough_games') {
+    el.innerHTML = '<div class="empty-state">Finish and score a few more games to get recommendations</div>';
+    return;
+  }
+  if (!data.picks || !data.picks.length) {
+    el.innerHTML = '<div class="empty-state">No picks yet — tap refresh</div>';
+    return;
+  }
+  el.innerHTML = data.picks.map(p => {
+    const platforms = p.platforms && p.platforms.length ? p.platforms.join(', ') : '';
+    return '<div class="discover-card">' +
+      '<div class="discover-card-title">' + p.name + '</div>' +
+      (platforms ? '<div class="discover-card-meta">' + platforms + '</div>' : '') +
+      '<div class="discover-card-reason">' + p.reason + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function loadButtonBoys() {
+  const el = document.getElementById('bb-list');
+  try {
+    const res = await fetch('/api/buttonboys');
+    const episodes = await res.json();
+    renderButtonBoys(episodes);
+  } catch (_) {
+    el.innerHTML = '<div class="empty-state">Could not load episode data</div>';
+  }
+}
+
+function renderButtonBoys(episodes) {
+  const el = document.getElementById('bb-list');
+  if (!el) return;
+  if (!episodes || !episodes.length) {
+    el.innerHTML = '<div class="empty-state">No episode data yet</div>';
+    return;
+  }
+  el.innerHTML = episodes.slice(0, 20).map(ep => {
+    const mc = ep.metacritic ? '<span class="pill">MC ' + ep.metacritic + '</span>' : '';
+    const cheapest = ep.platforms
+      .filter(p => p.price)
+      .sort((a, b) => parseFloat(a.price.replace(/[^0-9.]/g, '')) - parseFloat(b.price.replace(/[^0-9.]/g, '')))[0];
+    const priceStr = cheapest ? cheapest.name + ' ' + cheapest.price : '';
+    const platNames = ep.platforms.map(p => p.name).join(', ');
+    return '<div class="discover-card">' +
+      '<div class="discover-card-ep">Ep. ' + ep.episode + ' · ' + ep.episodeName + '</div>' +
+      '<div class="discover-card-title">' + ep.game + '</div>' +
+      '<div class="discover-card-meta">' + platNames + '</div>' +
+      '<div class="discover-card-pills">' + mc + (priceStr ? '<span class="pill pill-price">From ' + priceStr + '</span>' : '') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
 // ── Init ───────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -565,3 +657,4 @@ if ('serviceWorker' in navigator) {
 loadConsoles();
 loadLibrary();
 loadWishlist();
+loadDiscover();
