@@ -108,7 +108,11 @@ async function handleApi(request, env, path, url) {
     if (method === 'DELETE') {
       const body = await request.json();
       let library = await env.KV.get('library', 'json') || [];
-      library = library.filter(g => g.id !== body.id);
+      library = library.filter(g => {
+        if (body.id && g.id && g.id === body.id) return false;
+        if (body.name && body.addedAt && g.name === body.name && g.addedAt === body.addedAt) return false;
+        return true;
+      });
       await env.KV.put('library', JSON.stringify(library));
       return json(library);
     }
