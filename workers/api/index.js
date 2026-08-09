@@ -174,16 +174,16 @@ async function getIGDBToken(env) {
 
 async function searchIGDB(query, env) {
   const token = await getIGDBToken(env);
+  const clientId = await env.KV.get('config:igdb_client_id');
   const safe = query.replace(/"/g, '');
   const body = 'fields name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating,time_to_beat.normally;' +
     ' search "' + safe + '";' +
-    ' limit 10;' +
-    ' where version_parent = null & category = 0;';
+    ' limit 10;';
 
   const res = await fetch('https://api.igdb.com/v4/games', {
     method: 'POST',
     headers: {
-      'Client-ID': env.IGDB_CLIENT_ID,
+      'Client-ID': clientId,
       'Authorization': 'Bearer ' + token,
       'Content-Type': 'text/plain'
     },
@@ -191,7 +191,7 @@ async function searchIGDB(query, env) {
   });
 
   const games = await res.json();
-  if (!Array.isArray(games)) return [];
+  if (!Array.isArray(games)) throw new Error('IGDB returned: ' + JSON.stringify(games));
 
   return games.map(g => ({
     id: g.id,
