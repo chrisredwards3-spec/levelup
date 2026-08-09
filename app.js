@@ -23,7 +23,7 @@ let searchResultsCache = [];
 let pendingGame = null;
 let isEditing = false;
 let addStatus = 'playing';
-let addPlatform = null;
+let addPlatform = [];
 let scoreStr = '';
 
 // ── Tab navigation ─────────────────────────────────────────────
@@ -165,7 +165,8 @@ function renderLibrary() {
     const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 2).join(', ') : '';
     const year = g.year ? ' · ' + g.year : '';
 
-    const playedOn = g.platform ? ' · ' + g.platform : '';
+    const playedOnIds = g.playedOn && g.playedOn.length ? g.playedOn : (g.platform ? [g.platform] : []);
+    const playedOn = playedOnIds.length ? ' · ' + playedOnIds.map(id => { const c = CONSOLE_CATALOG.find(x => x.id === id); return c ? c.short : id; }).join(', ') : '';
     return '<div class="game-card" onclick="openEditGame(' + i + ')">' +
       coverHtml +
       '<div class="game-card-body">' +
@@ -256,7 +257,7 @@ function selectResult(idx) {
   pendingGame = searchResultsCache[idx];
   isEditing = false;
   addStatus = 'playing';
-  addPlatform = null;
+  addPlatform = [];
   scoreStr = '';
   closeGameSearch();
   openAddGame();
@@ -268,7 +269,7 @@ function openEditGame(idx) {
   pendingGame = game;
   isEditing = true;
   addStatus = game.status;
-  addPlatform = game.platform || null;
+  addPlatform = game.playedOn && game.playedOn.length ? game.playedOn : (game.platform ? [game.platform] : []);
   scoreStr = game.score != null ? String(game.score) : '';
   openAddGame();
 }
@@ -306,7 +307,7 @@ function renderAddSheet() {
   };
 
   const platformChips = CONSOLE_CATALOG.map(p =>
-    '<button class="platform-chip' + (addPlatform === p.id ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
+    '<button class="platform-chip' + (addPlatform.includes(p.id) ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
   ).join('');
 
   const deleteBtn = '';
@@ -347,7 +348,9 @@ function setStatus(s) {
 }
 
 function setPlatform(id) {
-  addPlatform = addPlatform === id ? null : id;
+  const idx = addPlatform.indexOf(id);
+  if (idx === -1) addPlatform.push(id);
+  else addPlatform.splice(idx, 1);
   renderAddSheet();
 }
 
@@ -386,11 +389,10 @@ function numpadDel() {
 async function saveGame() {
   if (!pendingGame) return;
   const score = scoreStr ? parseFloat(scoreStr) : null;
-  const platform = addPlatform;
   await fetch('/api/library', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.assign({}, pendingGame, { status: addStatus, score, platform }))
+    body: JSON.stringify(Object.assign({}, pendingGame, { status: addStatus, score, playedOn: addPlatform }))
   });
   closeAddGame();
   await loadLibrary();
