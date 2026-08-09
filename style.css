@@ -292,23 +292,6 @@ html, body {
   text-align: right;
 }
 
-.game-card-delete {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  background: rgba(248,113,113,0.15);
-  border: 1px solid rgba(248,113,113,0.3);
-  border-radius: 50%;
-  color: #f87171;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .game-card-score.unscored {
   font-size: 13px;
@@ -470,6 +453,46 @@ html, body {
 .status-pill.active-playing   { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 .status-pill.active-completed { border-color: #a78bfa; color: #a78bfa; background: rgba(167,139,250,0.1); }
 .status-pill.active-dropped   { border-color: #f87171; color: #f87171; background: rgba(248,113,113,0.1); }
+
+/* Platform chips (played on) */
+.platform-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.platform-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* Delete button */
+.btn-delete {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: #f87171;
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
 
 /* Score numpad */
 .score-display {

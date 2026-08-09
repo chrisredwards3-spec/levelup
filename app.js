@@ -20,7 +20,9 @@ let libraryGames = [];
 let currentLibraryFilter = 'playing';
 let searchResultsCache = [];
 let pendingGame = null;
+let isEditing = false;
 let addStatus = 'playing';
+let addPlatform = null;
 let scoreStr = '';
 
 // ── Tab navigation ─────────────────────────────────────────────
@@ -161,11 +163,12 @@ function renderLibrary() {
     const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 2).join(', ') : '';
     const year = g.year ? ' · ' + g.year : '';
 
-    return '<div class="game-card">' +
+    const playedOn = g.platform ? ' · ' + g.platform : '';
+    return '<div class="game-card" onclick="openEditGame(' + g.id + ')">' +
       coverHtml +
       '<div class="game-card-body">' +
         '<div class="game-card-title">' + g.name + '</div>' +
-        '<div class="game-card-meta">' + platforms + year + '</div>' +
+        '<div class="game-card-meta">' + platforms + year + playedOn + '</div>' +
         '<div class="game-card-pills">' +
           '<span class="pill pill-' + g.status + '">' + g.status + '</span>' +
           timeHtml +
@@ -173,7 +176,6 @@ function renderLibrary() {
         '</div>' +
       '</div>' +
       scoreHtml +
-      '<button class="game-card-delete" onclick="removeFromLibrary(' + g.id + ')">×</button>' +
     '</div>';
   }).join('');
 }
@@ -249,14 +251,27 @@ function renderSearchResults(games) {
 
 function selectResult(idx) {
   pendingGame = searchResultsCache[idx];
+  isEditing = false;
+  addStatus = 'playing';
+  addPlatform = null;
+  scoreStr = '';
   closeGameSearch();
   openAddGame();
 }
 
-// ── Add Game Sheet ─────────────────────────────────────────────
+function openEditGame(id) {
+  const game = libraryGames.find(g => g.id === id);
+  if (!game) return;
+  pendingGame = game;
+  isEditing = true;
+  addStatus = game.status;
+  addPlatform = game.platform || null;
+  scoreStr = game.score != null ? String(game.score) : '';
+  openAddGame();
+}
+
+// ── Add/Edit Game Sheet ────────────────────────────────────────
 function openAddGame() {
-  addStatus = 'playing';
-  scoreStr = '';
   renderAddSheet();
   document.getElementById('add-sheet').classList.remove('hidden');
   document.getElementById('add-backdrop').classList.remove('hidden');
@@ -266,6 +281,7 @@ function closeAddGame() {
   document.getElementById('add-sheet').classList.add('hidden');
   document.getElementById('add-backdrop').classList.add('hidden');
   pendingGame = null;
+  isEditing = false;
 }
 
 function renderAddSheet() {
@@ -274,32 +290,41 @@ function renderAddSheet() {
   const coverHtml = g.cover
     ? '<img class="add-game-cover" src="' + g.cover + '" alt="">'
     : '<div class="add-game-cover-ph">🎮</div>';
-  const platforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 3).join(', ') : '';
+  const igdbPlatforms = g.platforms && g.platforms.length ? g.platforms.slice(0, 3).join(', ') : '';
   const year = g.year ? ' · ' + g.year : '';
   const mc = g.metacritic ? ' · MC ' + g.metacritic : '';
-  const time = g.timeToBeat ? ' · ⏱ ' + g.timeToBeat + 'h' : '';
 
   const scoreDisplay = scoreStr
     ? '<div class="score-display">' + scoreStr + ' / 10</div>'
     : '<div class="score-display empty">Tap to score (optional)</div>';
 
-  const statusClass = function(s) {
+  const sc = function(s) {
     return 'status-pill' + (addStatus === s ? ' active-' + s : '');
   };
+
+  const platformChips = ownedConsoles.map(p =>
+    '<button class="platform-chip' + (addPlatform === p.id ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
+  ).join('');
+
+  const deleteBtn = isEditing
+    ? '<button class="btn-delete" onclick="confirmDelete()">Remove from Library</button>'
+    : '';
 
   document.getElementById('add-game-content').innerHTML =
     '<div class="add-game-header">' +
       coverHtml +
       '<div>' +
         '<div class="add-game-title">' + g.name + '</div>' +
-        '<div class="add-game-meta">' + platforms + year + mc + time + '</div>' +
+        '<div class="add-game-meta">' + igdbPlatforms + year + mc + '</div>' +
       '</div>' +
     '</div>' +
+    '<div class="add-section-label">Played on</div>' +
+    '<div class="platform-chips">' + (platformChips || '<span style="color:var(--text-muted);font-size:13px">Add consoles first</span>') + '</div>' +
     '<div class="add-section-label">Status</div>' +
     '<div class="status-pills">' +
-      '<button class="' + statusClass('playing') + '" onclick="setStatus(\'playing\')">Playing</button>' +
-      '<button class="' + statusClass('completed') + '" onclick="setStatus(\'completed\')">Completed</button>' +
-      '<button class="' + statusClass('dropped') + '" onclick="setStatus(\'dropped\')">Dropped</button>' +
+      '<button class="' + sc('playing') + '" onclick="setStatus(\'playing\')">Playing</button>' +
+      '<button class="' + sc('completed') + '" onclick="setStatus(\'completed\')">Completed</button>' +
+      '<button class="' + sc('dropped') + '" onclick="setStatus(\'dropped\')">Dropped</button>' +
     '</div>' +
     '<div class="add-section-label">Your Score</div>' +
     scoreDisplay +
@@ -311,12 +336,24 @@ function renderAddSheet() {
       '<button class="numpad-btn" onclick="numpad(\'0\')">0</button>' +
       '<button class="numpad-btn" onclick="numpadDel()">⌫</button>' +
     '</div>' +
-    '<button class="btn-primary" onclick="saveGame()">Add to Library</button>';
+    '<button class="btn-primary" onclick="saveGame()">' + (isEditing ? 'Save Changes' : 'Add to Library') + '</button>' +
+    deleteBtn;
 }
 
 function setStatus(s) {
   addStatus = s;
   renderAddSheet();
+}
+
+function setPlatform(id) {
+  addPlatform = addPlatform === id ? null : id;
+  renderAddSheet();
+}
+
+function confirmDelete() {
+  if (!pendingGame) return;
+  removeFromLibrary(pendingGame.id);
+  closeAddGame();
 }
 
 function numpad(val) {
@@ -340,15 +377,24 @@ function numpadDel() {
 async function saveGame() {
   if (!pendingGame) return;
   const score = scoreStr ? parseFloat(scoreStr) : null;
+  const platform = addPlatform;
   await fetch('/api/library', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.assign({}, pendingGame, { status: addStatus, score }))
+    body: JSON.stringify(Object.assign({}, pendingGame, { status: addStatus, score, platform }))
   });
   closeAddGame();
   await loadLibrary();
-  // Switch to library tab
   document.querySelector('.nav-item[data-tab="library"]').click();
+}
+
+async function removeFromLibrary(id) {
+  await fetch('/api/library', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id })
+  });
+  await loadLibrary();
 }
 
 // ── Init ───────────────────────────────────────────────────────
