@@ -302,7 +302,7 @@ function renderAddSheet() {
     return 'status-pill' + (addStatus === s ? ' active-' + s : '');
   };
 
-  const platformChips = ownedConsoles.map(p =>
+  const platformChips = CONSOLE_CATALOG.map(p =>
     '<button class="platform-chip' + (addPlatform === p.id ? ' active' : '') + '" onclick="setPlatform(\'' + p.id + '\')">' + p.short + '</button>'
   ).join('');
 
