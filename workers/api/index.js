@@ -45,7 +45,7 @@ async function handleApi(request, env, path, url) {
     if (q.length < 2) return json([]);
     try {
       const results = await searchIGDB(q, env);
-      return json({ debug: true, results });
+      return json(results);
     } catch (err) {
       return json({ error: err.message }, 500);
     }
@@ -176,7 +176,7 @@ async function searchIGDB(query, env) {
   const token = await getIGDBToken(env);
   const clientId = await env.KV.get('config:igdb_client_id');
   const safe = query.replace(/"/g, '');
-  const body = 'fields id,name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating,time_to_beat.normally;\nsearch "' + safe + '";\nlimit 10;';
+  const body = 'fields id,name,cover.url,platforms.abbreviation,first_release_date,aggregated_rating;\nsearch "' + safe + '";\nlimit 10;';
 
   const res = await fetch('https://api.igdb.com/v4/games', {
     method: 'POST',
@@ -190,7 +190,7 @@ async function searchIGDB(query, env) {
 
   const raw = await res.json();
   if (!Array.isArray(raw)) throw new Error('IGDB returned: ' + JSON.stringify(raw));
-  return raw; // DEBUG: return raw before map
+  const games = raw;
 
   return games.map(g => ({
     id: g.id,
@@ -199,7 +199,7 @@ async function searchIGDB(query, env) {
     platforms: g.platforms ? g.platforms.map(p => p.abbreviation).filter(Boolean) : [],
     year: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null,
     metacritic: g.aggregated_rating ? Math.round(g.aggregated_rating) : null,
-    timeToBeat: g.time_to_beat && g.time_to_beat.normally ? Math.round(g.time_to_beat.normally / 360) / 10 : null
+    timeToBeat: null
   }));
 }
 
