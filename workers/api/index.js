@@ -338,6 +338,7 @@ async function getAIPicks(env) {
   const prompt = 'Games this person has finished and rated: ' + finishedList + '\n\n' +
     'Games they already own, are playing, or have wishlisted (DO NOT recommend any of these): ' + alreadyKnown + '\n\n' +
     'Recommend exactly 8 games they would enjoy that are not in either list above. ' +
+    'Only recommend games with a Metacritic score of 75 or above — do not recommend poorly reviewed or niche titles. ' +
     'Split them as: 4 larger games best played at home in long sessions (train:false), and 4 games ideal for a train journey — must have natural short-session play, must be completely safe for public viewing, no sexual content, no graphic violence on screen, nothing NSFW (train:true). ' +
     'Return ONLY a valid JSON array, no markdown, no explanation:\n' +
     '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"],"train":false}]';
