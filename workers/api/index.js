@@ -323,6 +323,8 @@ async function getAIPicks(env) {
   if (!apiKey) return { picks: [], generatedAt: null, message: 'no_key' };
 
   const library = await env.KV.get('library', 'json') || [];
+  const wishlist = await env.KV.get('wishlist', 'json') || [];
+
   const finished = library
     .filter(g => g.status === 'completed' && g.score != null)
     .sort((a, b) => b.score - a.score)
@@ -330,10 +332,12 @@ async function getAIPicks(env) {
 
   if (finished.length < 3) return { picks: [], generatedAt: null, message: 'not_enough_games' };
 
-  const gameList = finished.map(g => g.name + ' (' + g.score + '/10)').join(', ');
+  const finishedList = finished.map(g => g.name + ' (' + g.score + '/10)').join(', ');
+  const alreadyKnown = library.map(g => g.name).concat(wishlist.map(g => g.name)).join(', ');
 
-  const prompt = 'Games this person has finished and rated: ' + gameList + '\n\n' +
-    'Recommend exactly 4 games they would enjoy that are NOT in their list. ' +
+  const prompt = 'Games this person has finished and rated: ' + finishedList + '\n\n' +
+    'Games they already own, are playing, or have wishlisted (DO NOT recommend these): ' + alreadyKnown + '\n\n' +
+    'Recommend exactly 4 games they would enjoy that are not in either list above. ' +
     'Return ONLY a valid JSON array, no markdown, no explanation:\n' +
     '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"]}]';
 
