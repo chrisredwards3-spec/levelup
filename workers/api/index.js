@@ -360,7 +360,7 @@ async function getAIPicks(env) {
     'Only recommend games with a Metacritic score of 70 or above — do not recommend poorly reviewed or niche titles. ' +
     'Split them as: 4 larger games best played at home in long sessions (train:false), and 4 games ideal for a train journey — must have natural short-session play, must be completely safe for public viewing, no sexual content, no graphic violence on screen, nothing NSFW (train:true). ' +
     'Return ONLY a valid JSON array, no markdown, no explanation:\n' +
-    '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"],"metacritic":85,"train":false}]';
+    '[{"name":"exact game title","reason":"one sentence why based on their taste","platforms":["PS5","Switch","PC"],"metacritic":85,"timeToBeat":20,"train":false}]';
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

@@ -678,7 +678,7 @@ function pickCard(p) {
       '<div class="discover-card-title">' + p.name + '</div>' +
       badge +
     '</div>' +
-    '<div class="discover-card-meta">' + (platforms || '') + (p.metacritic ? ' · MC ' + p.metacritic : '') + '</div>' +
+    '<div class="discover-card-meta">' + (platforms || '') + (p.metacritic ? ' · MC ' + p.metacritic : '') + (p.timeToBeat ? ' · ⏱ ' + p.timeToBeat + 'h' : '') + '</div>' +
     '<div class="discover-card-reason">' + p.reason + '</div>' +
     '<div class="discover-card-actions">' +
       '<button class="pick-action-btn" onclick="addPickToWishlist(' + idx + ')">+ Wishlist</button>' +
