@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0f0d">
+  <title>Ryan Hedges — Career Tracker</title>
+  <meta name="description" content="Career stats, highlights and match day status for Welsh winger Ryan Hedges.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <header class="hero">
+      <div class="hero-top">
+        <span class="badge-flag" aria-hidden="true">WAL</span>
+        <span class="hero-eyebrow">Winger / Left Wing-Back</span>
+      </div>
+      <h1 class="hero-name">Ryan Hedges</h1>
+      <p class="hero-sub" id="hero-club">Loading…</p>
+      <nav class="hero-nav">
+        <a href="#matchday">Match Day</a>
+        <a href="#stats">Career Stats</a>
+        <a href="#matchlog">Match Log</a>
+        <a href="#highlights">Highlights</a>
+        <a href="#about">About</a>
+      </nav>
+    </header>
+
+    <main>
+
+      <section id="matchday" class="section">
+        <h2 class="section-title">Match Day Status</h2>
+        <div id="matchday-card" class="card matchday-card">Loading match day info…</div>
+        <p id="matchday-live-note" class="footnote" hidden></p>
+      </section>
+
+      <section id="stats" class="section">
+        <h2 class="section-title">Career Statistics</h2>
+        <div class="card">
+          <div class="table-scroll">
+            <table id="stats-table" class="stats-table">
+              <thead>
+                <tr>
+                  <th>Club</th>
+                  <th>Years</th>
+                  <th>Apps</th>
+                  <th>Goals</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+          <p class="footnote">Senior club career only. Figures combine league and cup competitions.</p>
+        </div>
+
+        <div class="card" id="international-card">
+          <h3 class="card-title">International — Wales</h3>
+          <div id="international-body"></div>
+        </div>
+
+        <div class="card" id="honours-card">
+          <h3 class="card-title">Honours &amp; Milestones</h3>
+          <ul id="honours-list" class="plain-list"></ul>
+        </div>
+      </section>
+
+      <section id="matchlog" class="section">
+        <h2 class="section-title">Match-by-Match (Live)</h2>
+        <div class="card">
+          <div id="matchlog-wrap" class="table-scroll" hidden>
+            <table id="matchlog-table" class="stats-table matchlog-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Opponent</th>
+                  <th>Role</th>
+                  <th>Min</th>
+                  <th>G</th>
+                  <th>A</th>
+                  <th>Key P.</th>
+                  <th>Rating</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p id="matchlog-empty" class="footnote">Loading recent match data…</p>
+        </div>
+      </section>
+
+      <section id="highlights" class="section">
+        <h2 class="section-title">Highlights</h2>
+        <div id="highlights-grid" class="highlights-grid"></div>
+      </section>
+
+      <section id="about" class="section">
+        <h2 class="section-title">About</h2>
+        <div class="card" id="about-card"></div>
+      </section>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>Fan-made career tracker. Match day status and match-by-match stats come live from API-Football when a key is configured; otherwise match day falls back to a manually-updated status.</p>
+    </footer>
+
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
