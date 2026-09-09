@@ -142,6 +142,14 @@ html, body {
 .md-status-bar.status-not_selected { background: rgba(214,63,63,0.15); color: #ff6b6b; }
 .md-status-bar.status-not_announced { background: rgba(107,116,110,0.18); color: var(--text-dim); }
 
+/* Match log */
+.matchlog-table { min-width: 520px; table-layout: auto; }
+.matchlog-table th, .matchlog-table td { text-align: right; }
+.matchlog-table th:nth-child(1), .matchlog-table td:nth-child(1),
+.matchlog-table th:nth-child(2), .matchlog-table td:nth-child(2) { text-align: left; }
+.matchlog-table th:nth-child(1), .matchlog-table td:nth-child(1) { width: auto; }
+.matchlog-table th:nth-child(2), .matchlog-table td:nth-child(2) { width: auto; }
+
 .status-dot {
   width: 9px;
   height: 9px;

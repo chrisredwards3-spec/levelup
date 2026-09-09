@@ -1,5 +1,8 @@
-// Ryan Hedges career app — data file
-// Update MATCHDAY by hand on/around each fixture; everything else changes rarely.
+// Ryan Hedges career app — static fallback data.
+// Once workers/api/index.js has an API-Football key configured (see the
+// comment above the Ryan Hedges section in that file), match day status and
+// match-by-match stats are fetched live and this file's MATCHDAY block is
+// only used if that call fails. Update MATCHDAY by hand as a manual backup.
 
 const HEDGES = {
   bio: {
